@@ -63,7 +63,7 @@ func main() {
 
 	// Auth
 	router.Post("/address", handler.Auth(addressHandler.AddAddress))
-	router.Get("/address", handler.Auth(addressHandler.AddAddress))
+	router.Get("/addresses", handler.Auth(addressHandler.AddAddress))
 
 	http.ListenAndServe(":3000", router)
 }
