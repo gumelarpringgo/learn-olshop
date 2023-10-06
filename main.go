@@ -62,8 +62,10 @@ func main() {
 	// Public
 
 	// Auth
-	router.Post("/address", handler.Auth(addressHandler.AddAddress))
-	router.Get("/addresses", handler.Auth(addressHandler.AddAddress))
+	router.Post("/{user-id}/addresses", handler.Auth(addressHandler.AddAddress))
+	router.Get("/{user-id}/addresses", handler.Auth(addressHandler.GetAddresses))
+	router.Put("/{user-id}/addresses/{address-id}", handler.Auth(addressHandler.UpdateAddress))
+	router.Delete("/{user-id}/addresses/{address-id}", handler.Auth(addressHandler.DeleteAddress))
 
 	http.ListenAndServe(":3000", router)
 }

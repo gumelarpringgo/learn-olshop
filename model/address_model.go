@@ -22,42 +22,19 @@ type (
 	}
 
 	GetAllAddress struct {
-		UserId int `json:"user_id"`
+		UserId int `json:"user_id" validate:"required"`
 	}
 )
 
 // Response
 type (
+	AddressResWithoutData struct {
+		Message string `json:"message"`
+	}
+
 	AddressRes struct {
 		Address   string `json:"address"`
 		IsPrimary bool   `json:"is_primary"`
 		UserId    int    `json:"user_id"`
 	}
-
-	AddressesRes struct {
-		Addresses []AddressRes `json:"addresses"`
-	}
 )
-
-func FormatAddresses(arrayAddress []Address) AddressesRes {
-	addressesRes := []AddressRes{}
-	addrsRes := AddressRes{}
-	for _, address := range arrayAddress {
-
-		resAddr := addrsRes
-		resAddr.Address = address.Address
-
-		resAddsPrimary := false
-		if address.IsPrimary == "yes" {
-			resAddsPrimary = true
-		} else {
-			resAddsPrimary = false
-		}
-
-		resAddr.IsPrimary = resAddsPrimary
-		resAddr.UserId = address.UserId
-
-		addressesRes = append(addressesRes, resAddr)
-	}
-	return AddressesRes{}
-}
