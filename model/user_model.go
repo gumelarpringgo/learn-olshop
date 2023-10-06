@@ -31,6 +31,13 @@ type (
 		NewPassword     string `json:"new_password" validate:"required"`
 		ConfirmPassword string `json:"confirm_password" validate:"required"`
 	}
+
+	RegisterAdminReq struct {
+		Username  string `json:"username" validate:"required"`
+		Email     string `json:"email" validate:"required,email"`
+		Password  string `json:"password" validate:"required"`
+		CodeAdmin int    `json:"code_admin"`
+	}
 )
 
 // RESPONSE
@@ -51,5 +58,9 @@ type (
 
 	ChangePassRes struct {
 		ChangePassword string `json:"change_password"`
+	}
+
+	RegisterAdminRes struct {
+		Username string `json:"username"`
 	}
 )

@@ -9,9 +9,10 @@ import (
 
 var mySigningKey = []byte(os.Getenv("KEY_JWT"))
 
-func CreateToken(userId int) (string, error) {
+func CreateToken(userId int, role string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": userId,
+		"role":    role,
 	})
 
 	tokenString, err := token.SignedString(mySigningKey)
