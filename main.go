@@ -49,14 +49,16 @@ func main() {
 	router.Use(middleware.RealIP)
 	router.Use(middleware.Logger)
 
-	// USER
+	// USER PUBLIC
 	// Public
 	router.Post("/register", userHandler.Register)
 	router.Post("/login", userHandler.Login)
-
 	// Auth
 	router.Get("/profile", handler.Auth(userHandler.Profile))
 	router.Post("/change-password", handler.Auth(userHandler.ChangePassword))
+
+	// USER ADMIN
+	router.Post("/register-admin", userHandler.RegisterAdmin)
 
 	// ADDRESS
 	// Public

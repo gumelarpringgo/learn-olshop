@@ -10,10 +10,13 @@ import (
 )
 
 type UserServive interface {
+	// PUBLIC
 	Register(req model.RegisterReq) (model.RegisterRes, error)
 	Login(req model.LoginReq) (model.LoginRes, error)
 	Profile(id int) (model.ProfileRes, error)
 	ChangePassword(id int, req model.ChangePassReq) (model.ChangePassRes, error)
+	// ADMIN
+	RegisterAdmin(req model.RegisterAdminReq) (model.RegisterAdminRes, error)
 }
 
 type userService struct {
@@ -29,10 +32,13 @@ func NewUserService(repo repository.UserRepository) UserServive {
 var (
 	dbUser = model.User{}
 
+	// PUBLIC
 	emptyRegisRes      = model.RegisterRes{}
 	emptyLoginRes      = model.LoginRes{}
 	emptyProfileRes    = model.ProfileRes{}
 	emptyChangePassRes = model.ChangePassRes{}
+	// ADMIN
+	emptyRegisAdminRes = model.RegisterAdminRes{}
 )
 
 var (
@@ -97,7 +103,7 @@ func (s *userService) Login(req model.LoginReq) (model.LoginRes, error) {
 		return emptyLoginRes, errors.New("password incorrect")
 	}
 
-	token, err := config.CreateToken(user.Id)
+	token, err := config.CreateToken(user.Id, user.Role)
 	if err != nil {
 		return emptyLoginRes, err
 	}
@@ -167,6 +173,54 @@ func (s *userService) ChangePassword(id int, req model.ChangePassReq) (model.Cha
 
 	response := model.ChangePassRes{
 		ChangePassword: "changed password successfully",
+	}
+
+	return response, nil
+}
+
+// RegisterAdmin implements UserServive
+func (s *userService) RegisterAdmin(req model.RegisterAdminReq) (model.RegisterAdminRes, error) {
+	codeAdmin := 181910
+
+	passHash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return emptyRegisAdminRes, errors.New("failed generate pasword")
+	}
+
+	userUsername, err := s.Repo.FindByUsername(req.Username)
+	if err != nil {
+		return emptyRegisAdminRes, err
+	}
+
+	if userUsername.Id != 0 {
+		return emptyRegisAdminRes, errors.New("email already exists")
+	}
+
+	if req.CodeAdmin != codeAdmin {
+		return emptyRegisAdminRes, errors.New("code admin is wrong")
+	}
+
+	userEmail, err := s.Repo.FindByEmail(req.Email)
+	if err != nil {
+		return emptyRegisAdminRes, err
+	}
+
+	if userEmail.Id != 0 {
+		return emptyRegisAdminRes, errors.New("email already exists")
+	}
+
+	dbUser.Username = req.Username
+	dbUser.Email = req.Email
+	dbUser.Password = string(passHash)
+	dbUser.Role = "admin"
+
+	newUser, err := s.Repo.CreateUser(dbUser)
+	if err != nil {
+		return emptyRegisAdminRes, err
+	}
+
+	response := model.RegisterAdminRes{
+		Username: newUser.Username,
 	}
 
 	return response, nil
