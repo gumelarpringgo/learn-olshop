@@ -23,14 +23,18 @@ func main() {
 
 	db := config.ConnectDb()
 	validate := validator.New()
-
+	// USER
 	userRepo := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepo)
 	userHandler := handler.NewUserHandler(userService, validate)
-
+	// ADDRESS
 	addresRepo := repository.NewAddressRepository(db)
 	addressService := service.NewAddressService(&addresRepo)
 	addressHandler := handler.NewAddressHandler(addressService, validate)
+	// PRODUCT
+	productRepo := repository.NewProductRepository(db)
+	productService := service.NewProductService(productRepo)
+	productHandler := handler.NewProductHandler(productService, validate)
 
 	r := chi.NewRouter()
 
@@ -68,6 +72,9 @@ func main() {
 	router.Get("/{user-id}/addresses", handler.Auth(addressHandler.GetAddresses))
 	router.Put("/{user-id}/addresses/{address-id}", handler.Auth(addressHandler.UpdateAddress))
 	router.Delete("/{user-id}/addresses/{address-id}", handler.Auth(addressHandler.DeleteAddress))
+
+	// PRODUCT
+	router.Post("/{role}/products", handler.Auth(productHandler.AddProduct))
 
 	http.ListenAndServe(":3000", router)
 }

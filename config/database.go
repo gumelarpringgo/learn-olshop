@@ -27,6 +27,8 @@ func ConnectDb() *gorm.DB {
 	db.AutoMigrate(
 		model.User{},
 		model.Address{},
+		model.Product{},
+		model.ProductImage{},
 	)
 	return db
 }
