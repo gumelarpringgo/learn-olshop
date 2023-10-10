@@ -75,6 +75,7 @@ func main() {
 
 	// PRODUCT
 	router.Post("/{role}/products", handler.Auth(productHandler.AddProduct))
+	router.Get("/{role}/products/{product-id}", handler.Auth(productHandler.FindProductById))
 
 	http.ListenAndServe(":3000", router)
 }

@@ -6,6 +6,7 @@ import (
 	"learn/model"
 	"learn/service"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
@@ -14,6 +15,7 @@ import (
 
 type ProductHandler interface {
 	AddProduct(w http.ResponseWriter, r *http.Request)
+	FindProductById(w http.ResponseWriter, r *http.Request)
 }
 
 type productHandler struct {
@@ -55,6 +57,29 @@ func (h *productHandler) AddProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responseProduct, err := h.Service.AddProduct(req)
+	if err != nil {
+		WriteErrorResponse(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	WriteDataResponse(w, http.StatusOK, responseProduct)
+}
+
+// FindProductById implements ProductHandler
+func (h *productHandler) FindProductById(w http.ResponseWriter, r *http.Request) {
+	urlRole := chi.URLParam(r, "role")
+	productId := chi.URLParam(r, "product-id")
+	productIdInt, _ := strconv.Atoi(productId)
+
+	userInfo := r.Context().Value("userInfo").(jwt.MapClaims)
+	role := userInfo["role"].(string)
+
+	if urlRole != role {
+		WriteErrorResponse(w, http.StatusUnauthorized, common.ErrUnauthorized)
+		return
+	}
+
+	responseProduct, err := h.Service.FindProductById(productIdInt)
 	if err != nil {
 		WriteErrorResponse(w, http.StatusInternalServerError, err)
 		return

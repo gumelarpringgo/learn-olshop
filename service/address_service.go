@@ -24,8 +24,6 @@ func NewAddressService(srv *repository.AddressRepository) AddressService {
 }
 
 var (
-	// address = model.Address{}
-
 	emptyAddressRes         = model.AddressRes{}
 	emptyAddressesRes       = []model.AddressRes{}
 	emptyAddressWithoutData = model.AddressResWithoutData{}
