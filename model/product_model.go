@@ -28,11 +28,15 @@ type (
 
 // REQUEST
 type (
-	AddProductReq struct {
+	ProductReq struct {
 		Name        string `json:"name" validate:"required"`
 		Description string `json:"description" validate:"required"`
 		Quantity    int    `json:"quantity" validate:"required"`
 		Price       int    `json:"price" validate:"required"`
+	}
+
+	ProductImagesUploadReq struct {
+		IsPrimary string `form:"is_primary"`
 	}
 )
 
@@ -49,6 +53,10 @@ type (
 		Description   string            `json:"description"`
 		Quantity      int               `json:"quantity"`
 		Price         int               `json:"price"`
+		ProductImages []ProductImageRes `json:"product_images"`
+	}
+
+	ProductImagesRes struct {
 		ProductImages []ProductImageRes `json:"product_images"`
 	}
 )

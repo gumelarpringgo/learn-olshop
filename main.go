@@ -76,6 +76,13 @@ func main() {
 	// PRODUCT
 	router.Post("/{role}/products", handler.Auth(productHandler.AddProduct))
 	router.Get("/{role}/products/{product-id}", handler.Auth(productHandler.FindProductById))
+	router.Post("/{role}/products/{product-id}", handler.Auth(productHandler.UpdateProduct))
+	router.Delete("/{role}/products/{product-id}", handler.Auth(productHandler.DeleteProduct))
+
+	// PRODUCT IMAGES
+	router.Get("/{role}/products/{product-id}/images", handler.Auth(productHandler.GetAllProductImagesByProductId))
+	router.Post("/{role}/products/{product-id}/images", handler.Auth(productHandler.UploadProductImage))
+	router.Delete("/{role}/products/{product-id}/images/{product-image-id}", handler.Auth(productHandler.DeleteProductImage))
 
 	http.ListenAndServe(":3000", router)
 }
