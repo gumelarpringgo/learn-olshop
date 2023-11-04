@@ -53,7 +53,7 @@ func main() {
 	router.Use(middleware.RealIP)
 	router.Use(middleware.Logger)
 
-	// USER PUBLIC
+	// USER
 	// Public
 	router.Post("/register", userHandler.Register)
 	router.Post("/login", userHandler.Login)
@@ -61,19 +61,17 @@ func main() {
 	router.Get("/profile", handler.Auth(userHandler.Profile))
 	router.Post("/change-password", handler.Auth(userHandler.ChangePassword))
 
-	// USER ADMIN
+	// ADMIN
 	router.Post("/register-admin", userHandler.RegisterAdmin)
 
 	// ADDRESS
-	// Public
-
-	// Auth
 	router.Post("/{user-id}/addresses", handler.Auth(addressHandler.AddAddress))
 	router.Get("/{user-id}/addresses", handler.Auth(addressHandler.GetAddresses))
 	router.Put("/{user-id}/addresses/{address-id}", handler.Auth(addressHandler.UpdateAddress))
 	router.Delete("/{user-id}/addresses/{address-id}", handler.Auth(addressHandler.DeleteAddress))
 
 	// PRODUCT
+	// ADMIN
 	router.Post("/{role}/products", handler.Auth(productHandler.AddProduct))
 	router.Get("/{role}/products/{product-id}", handler.Auth(productHandler.FindProductById))
 	router.Post("/{role}/products/{product-id}", handler.Auth(productHandler.UpdateProduct))
@@ -83,6 +81,9 @@ func main() {
 	router.Get("/{role}/products/{product-id}/images", handler.Auth(productHandler.GetAllProductImagesByProductId))
 	router.Post("/{role}/products/{product-id}/images", handler.Auth(productHandler.UploadProductImage))
 	router.Delete("/{role}/products/{product-id}/images/{product-image-id}", handler.Auth(productHandler.DeleteProductImage))
+
+	// USER
+	router.Get("/products", productHandler.FindAllProduct)
 
 	http.ListenAndServe(":3000", router)
 }

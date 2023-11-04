@@ -2,6 +2,8 @@ package repository
 
 import (
 	"errors"
+	"fmt"
+	"learn/common"
 	"learn/model"
 
 	"gorm.io/gorm"
@@ -27,14 +29,6 @@ func NewAddressRepository(db *gorm.DB) AddressRepository {
 }
 
 var (
-	errCreateAddress = errors.New("failed create address")
-	errArrayAddress  = errors.New("failed get addresses")
-	errFindAddressId = errors.New("failed find address")
-	errUpdateAddress = errors.New("failed update address")
-	errDeleteAddress = errors.New("failed delete address")
-)
-
-var (
 	emptyAddress   = model.Address{}
 	emptyAddresses = []model.Address{}
 )
@@ -43,7 +37,9 @@ var (
 func (r *addressRepository) Create(address model.Address) (model.Address, error) {
 	err := r.DB.Create(&address).Error
 	if err != nil {
-		return address, errCreateAddress
+		if errors.Is(err, common.ErrFailedCreateData) {
+			return emptyAddress, fmt.Errorf("address: %w", common.ErrFailedCreateData)
+		}
 	}
 
 	return address, nil
@@ -53,7 +49,9 @@ func (r *addressRepository) Create(address model.Address) (model.Address, error)
 func (r *addressRepository) MarkAllAddressNonPrimary(UserId int) (bool, error) {
 	err := r.DB.Model(&model.Address{}).Where("user_id = ?", UserId).Update("is_primary", "no").Error
 	if err != nil {
-		return false, err
+		if errors.Is(err, common.ErrMustHavePrimary) {
+			return false, fmt.Errorf("address primary: %w", common.ErrMustHavePrimary)
+		}
 	}
 
 	return true, nil
@@ -64,7 +62,9 @@ func (r *addressRepository) FindByUserId(userId int) ([]model.Address, error) {
 	addresses := []model.Address{}
 	err := r.DB.Where("user_id = ?", userId).Find(&addresses).Error
 	if err != nil {
-		return emptyAddresses, errArrayAddress
+		if errors.Is(err, common.ErrNotFound) {
+			return emptyAddresses, fmt.Errorf("address user id %d: %w", userId, common.ErrNotFound)
+		}
 	}
 
 	return addresses, nil
@@ -75,7 +75,9 @@ func (r *addressRepository) FindByAddressId(addressId int) (model.Address, error
 	address := model.Address{}
 	err := r.DB.Where("id = ?", addressId).Find(&address).Error
 	if err != nil {
-		return emptyAddress, errFindAddressId
+		if errors.Is(err, common.ErrNotFound) {
+			return emptyAddress, fmt.Errorf("address id %d: %w", addressId, common.ErrNotFound)
+		}
 	}
 
 	return address, nil
@@ -85,7 +87,9 @@ func (r *addressRepository) FindByAddressId(addressId int) (model.Address, error
 func (r *addressRepository) Update(address model.Address) (model.Address, error) {
 	err := r.DB.Save(&address).Error
 	if err != nil {
-		return address, errUpdateAddress
+		if errors.Is(err, common.ErrFailedUpdateData) {
+			return address, fmt.Errorf("address : %w", common.ErrFailedUpdateData)
+		}
 	}
 
 	return address, nil
@@ -95,7 +99,9 @@ func (r *addressRepository) Update(address model.Address) (model.Address, error)
 func (r *addressRepository) Delete(addressId int) error {
 	err := r.DB.Delete(&model.Address{}, addressId).Error
 	if err != nil {
-		return errDeleteAddress
+		if errors.Is(err, common.ErrNotFound) {
+			return fmt.Errorf("address %d: %w", addressId, common.ErrNotFound)
+		}
 	}
 
 	return nil

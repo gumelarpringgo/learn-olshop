@@ -36,7 +36,7 @@ type (
 		Username  string `json:"username" validate:"required"`
 		Email     string `json:"email" validate:"required,email"`
 		Password  string `json:"password" validate:"required"`
-		CodeAdmin int    `json:"code_admin"`
+		CodeAdmin int    `json:"code_admin" validate:"required"`
 	}
 )
 

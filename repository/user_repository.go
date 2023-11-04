@@ -2,6 +2,8 @@ package repository
 
 import (
 	"errors"
+	"fmt"
+	"learn/common"
 	"learn/model"
 
 	"gorm.io/gorm"
@@ -26,16 +28,6 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 }
 
 var (
-	SuccChangePass = "change password successfully"
-)
-
-var (
-	ErrCreateUser     = errors.New("failed create user")
-	ErrUserNotFound   = errors.New("user not found")
-	ErrUpdatePassword = errors.New("failed update password")
-)
-
-var (
 	emptyUser = model.User{}
 )
 
@@ -43,7 +35,9 @@ var (
 func (r *userRepository) CreateUser(user model.User) (model.User, error) {
 	err := r.DB.Create(&user).Error
 	if err != nil {
-		return emptyUser, ErrCreateUser
+		if errors.Is(err, common.ErrFailedCreateData) {
+			return emptyUser, fmt.Errorf("user: %w", common.ErrFailedCreateData)
+		}
 	}
 
 	return user, nil
@@ -54,12 +48,14 @@ func (r *userRepository) FindByID(id int) (model.User, error) {
 	dbUser := model.User{}
 
 	if id == 0 {
-		return emptyUser, ErrUserNotFound
+		return emptyUser, fmt.Errorf("user %d: %w", id, common.ErrNotFound)
 	}
 
 	err := r.DB.Where("id = ?", id).Find(&dbUser).Error
 	if err != nil {
-		return emptyUser, ErrUserNotFound
+		if errors.Is(err, common.ErrNotFound) {
+			return emptyUser, fmt.Errorf("user %d: %w", id, common.ErrNotFound)
+		}
 	}
 
 	return dbUser, nil
@@ -71,7 +67,9 @@ func (r *userRepository) FindByEmail(email string) (model.User, error) {
 
 	err := r.DB.Where("email = ?", email).Find(&dbUser).Error
 	if err != nil {
-		return emptyUser, ErrUserNotFound
+		if errors.Is(err, common.ErrNotFound) {
+			return emptyUser, fmt.Errorf("user %s: %w", email, common.ErrNotFound)
+		}
 	}
 
 	return dbUser, nil
@@ -83,7 +81,9 @@ func (r *userRepository) FindByUsername(username string) (model.User, error) {
 
 	err := r.DB.Where("username = ?", username).Find(&dbUser).Error
 	if err != nil {
-		return emptyUser, ErrUserNotFound
+		if errors.Is(err, common.ErrNotFound) {
+			return emptyUser, fmt.Errorf("user %s: %w", username, common.ErrNotFound)
+		}
 	}
 
 	return dbUser, nil
@@ -93,7 +93,9 @@ func (r *userRepository) FindByUsername(username string) (model.User, error) {
 func (r *userRepository) SaveNewPassword(user model.User) (model.User, error) {
 	err := r.DB.Save(&user).Error
 	if err != nil {
-		return emptyUser, ErrUpdatePassword
+		if errors.Is(err, common.ErrFailedUpdateData) {
+			return emptyUser, fmt.Errorf("user : %w", common.ErrFailedUpdateData)
+		}
 	}
 
 	return user, nil

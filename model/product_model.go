@@ -73,6 +73,18 @@ func ProductFormatRes(product Product) ProductRes {
 	return response
 }
 
+func ProductsFormatRes(products []Product) []ProductRes {
+	ProductsFormatRes := []ProductRes{}
+
+	for _, product := range products {
+		productFormatRes := ProductFormatRes(product)
+
+		ProductsFormatRes = append(ProductsFormatRes, productFormatRes)
+	}
+
+	return ProductsFormatRes
+}
+
 func ProductImageFormatRes(pi ProductImage) ProductImageRes {
 	return ProductImageRes{
 		ProductId: pi.ProductId,

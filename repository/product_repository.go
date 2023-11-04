@@ -10,16 +10,20 @@ import (
 )
 
 type ProductRepository interface {
+	//Product
 	CreateProduct(product model.Product) (model.Product, error)
 	FindProductById(productId int) (model.Product, error)
 	UpdateProduct(product model.Product) (model.Product, error)
 	DeleteProduct(productId int) error
-
+	//Product Image
 	FindAllProductImagesByProductId(productId int) ([]model.ProductImage, error)
 	CreateProductImages(productImages model.ProductImage) (model.ProductImage, error)
 	MarkAllProductImagesNonPrimary(productId int) (bool, error)
 	DeleteProductImageById(prodImgId int) error
 	UpdateProductImageById(productImage model.ProductImage) (model.ProductImage, error)
+
+	// USER
+	FindAllProduct() ([]model.Product, error)
 }
 
 type productRepository struct {
@@ -34,6 +38,7 @@ func NewProductRepository(db *gorm.DB) ProductRepository {
 
 var (
 	emptyProduct       = model.Product{}
+	empryProducts      = []model.Product{}
 	emptyProductImages = []model.ProductImage{}
 	emptyProductImage  = model.ProductImage{}
 )
@@ -69,7 +74,7 @@ func (r *productRepository) UpdateProduct(product model.Product) (model.Product,
 	err := r.DB.Save(&product).Error
 	if err != nil {
 		if errors.Is(err, common.ErrFailedUpdateData) {
-			return emptyProduct, fmt.Errorf("product : %w", common.ErrNotFound)
+			return emptyProduct, fmt.Errorf("product : %w", common.ErrFailedUpdateData)
 		}
 	}
 
@@ -84,7 +89,7 @@ func (r *productRepository) DeleteProduct(productId int) error {
 	productImages := []model.ProductImage{}
 	err := r.DB.Where("product_id = ?", productId).Find(&productImages).Delete(&productImage).Error
 	if err != nil {
-		if errors.Is(err, common.ErrNotFound) {
+		if errors.Is(err, common.ErrDeleteData) {
 			return fmt.Errorf("product %d: %w", productId, common.ErrDeleteData)
 		}
 	}
@@ -161,4 +166,19 @@ func (r *productRepository) UpdateProductImageById(productImage model.ProductIma
 	}
 
 	return productImage, nil
+}
+
+// / USER
+// FindAllProduct implements ProductRepository
+func (r *productRepository) FindAllProduct() ([]model.Product, error) {
+	products := []model.Product{}
+
+	err := r.DB.Model(&model.Product{}).Preload("ProductImages", "product_images.is_primary = ?", "yes").Find(&products).Error
+	if err != nil {
+		if errors.Is(err, common.ErrNotFound) {
+			return empryProducts, fmt.Errorf("product : %w", common.ErrNotFound)
+		}
+	}
+
+	return products, nil
 }

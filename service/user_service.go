@@ -1,7 +1,8 @@
 package service
 
 import (
-	"errors"
+	"fmt"
+	"learn/common"
 	"learn/config"
 	"learn/model"
 	"learn/repository"
@@ -32,7 +33,7 @@ func NewUserService(repo repository.UserRepository) UserServive {
 var (
 	dbUser = model.User{}
 
-	// PUBLIC
+	// USER
 	emptyRegisRes      = model.RegisterRes{}
 	emptyLoginRes      = model.LoginRes{}
 	emptyProfileRes    = model.ProfileRes{}
@@ -41,33 +42,29 @@ var (
 	emptyRegisAdminRes = model.RegisterAdminRes{}
 )
 
-var (
-	errorUserNotFound = errors.New("user not found")
-)
-
 // Register implements UserServive
 func (s *userService) Register(req model.RegisterReq) (model.RegisterRes, error) {
 	passHash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return emptyRegisRes, errors.New("failed generate pasword")
+		return emptyRegisRes, fmt.Errorf("GenerateFromPassword call failed: %w", err)
 	}
 
 	username, err := s.Repo.FindByUsername(req.Username)
 	if err != nil {
-		return emptyRegisRes, err
+		return emptyRegisRes, fmt.Errorf("FindByUsername call failed: %w", err)
 	}
 
 	if username.Id != 0 {
-		return emptyRegisRes, errors.New("username already exists")
+		return emptyRegisRes, fmt.Errorf("user id %d : %w", username.Id, common.ErrNotFound)
 	}
 
 	userEmail, err := s.Repo.FindByEmail(req.Email)
 	if err != nil {
-		return emptyRegisRes, err
+		return emptyRegisRes, fmt.Errorf("FindByEmail call failed: %w", err)
 	}
 
 	if userEmail.Id != 0 {
-		return emptyRegisRes, errors.New("email already exists")
+		return emptyRegisRes, fmt.Errorf("user email %d : %w", userEmail.Id, common.ErrNotFound)
 	}
 
 	dbUser.Username = req.Username
@@ -77,7 +74,7 @@ func (s *userService) Register(req model.RegisterReq) (model.RegisterRes, error)
 
 	user, err := s.Repo.CreateUser(dbUser)
 	if err != nil {
-		return emptyRegisRes, err
+		return emptyRegisRes, fmt.Errorf("CreateUser call failed: %w", err)
 	}
 
 	response := model.RegisterRes{
@@ -91,21 +88,20 @@ func (s *userService) Register(req model.RegisterReq) (model.RegisterRes, error)
 func (s *userService) Login(req model.LoginReq) (model.LoginRes, error) {
 	user, err := s.Repo.FindByUsername(req.Username)
 	if err != nil {
-		return emptyLoginRes, err
+		return emptyLoginRes, fmt.Errorf("FindByUsername call failed: %w", err)
 	}
-
 	if user.Id == 0 {
-		return emptyLoginRes, errors.New("username incorrect")
+		return emptyLoginRes, fmt.Errorf("user id %d : %w", user.Id, common.ErrNotFound)
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
 	if err != nil {
-		return emptyLoginRes, errors.New("password incorrect")
+		return emptyLoginRes, fmt.Errorf("CompareHashAndPassword call failed: %w", err)
 	}
 
 	token, err := config.CreateToken(user.Id, user.Role)
 	if err != nil {
-		return emptyLoginRes, err
+		return emptyLoginRes, fmt.Errorf("CreateToken call failed: %w", err)
 	}
 
 	response := model.LoginRes{
@@ -119,11 +115,11 @@ func (s *userService) Login(req model.LoginReq) (model.LoginRes, error) {
 func (s *userService) Profile(id int) (model.ProfileRes, error) {
 	user, err := s.Repo.FindByID(id)
 	if err != nil {
-		return emptyProfileRes, err
+		return emptyProfileRes, fmt.Errorf("FindByID call failed: %w", err)
 	}
 
 	if user.Id == 0 {
-		return emptyProfileRes, errorUserNotFound
+		return emptyProfileRes, fmt.Errorf("user id %d : %w", user.Id, common.ErrNotFound)
 	}
 
 	response := model.ProfileRes{
@@ -139,36 +135,34 @@ func (s *userService) Profile(id int) (model.ProfileRes, error) {
 func (s *userService) ChangePassword(id int, req model.ChangePassReq) (model.ChangePassRes, error) {
 	newPass, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
-		return emptyChangePassRes, errors.New("failed generate pasword")
+		return emptyChangePassRes, fmt.Errorf("GenerateFromPassword call failed: %w", err)
 	}
 
 	user, err := s.Repo.FindByID(id)
 	if err != nil {
-		return emptyChangePassRes, err
+		return emptyChangePassRes, fmt.Errorf("FindByID call failed: %w", err)
 	}
-
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
 	if err != nil {
-		return emptyChangePassRes, errors.New("password incorrect")
+		return emptyChangePassRes, fmt.Errorf("CompareHashAndPassword call failed: %w", err)
 	}
 
 	if user.Id == 0 {
-		return emptyChangePassRes, errorUserNotFound
+		return emptyChangePassRes, fmt.Errorf("user id %d : %w", user.Id, common.ErrNotFound)
 	}
-
 	if req.NewPassword != req.ConfirmPassword {
-		return emptyChangePassRes, errors.New("new password do not match")
+		return emptyChangePassRes, fmt.Errorf("user passwored : %w", common.ErrNotMatch)
 	}
 
 	if req.Password == req.NewPassword {
-		return emptyChangePassRes, errors.New("new password cannot be the same as old")
+		return emptyChangePassRes, fmt.Errorf("user passwored : %w", common.ErrNotMatch)
 	}
 
 	user.Password = string(newPass)
 
 	_, err = s.Repo.SaveNewPassword(user)
 	if err != nil {
-		return emptyChangePassRes, err
+		return emptyChangePassRes, fmt.Errorf("SaveNewPassword call failed: %w", err)
 	}
 
 	response := model.ChangePassRes{
@@ -184,29 +178,29 @@ func (s *userService) RegisterAdmin(req model.RegisterAdminReq) (model.RegisterA
 
 	passHash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return emptyRegisAdminRes, errors.New("failed generate pasword")
+		return emptyRegisAdminRes, fmt.Errorf("GenerateFromPassword call failed: %w", err)
 	}
 
 	userUsername, err := s.Repo.FindByUsername(req.Username)
 	if err != nil {
-		return emptyRegisAdminRes, err
+		return emptyRegisAdminRes, fmt.Errorf("FindByUsername call failed: %w", err)
 	}
 
 	if userUsername.Id != 0 {
-		return emptyRegisAdminRes, errors.New("email already exists")
+		return emptyRegisAdminRes, fmt.Errorf("admin email : %w", common.ErrExists)
 	}
 
 	if req.CodeAdmin != codeAdmin {
-		return emptyRegisAdminRes, errors.New("code admin is wrong")
+		return emptyRegisAdminRes, fmt.Errorf("admin code : %w", common.ErrNotMatch)
 	}
 
 	userEmail, err := s.Repo.FindByEmail(req.Email)
 	if err != nil {
-		return emptyRegisAdminRes, err
+		return emptyRegisAdminRes, fmt.Errorf("FindByEmail call failed: %w", err)
 	}
 
 	if userEmail.Id != 0 {
-		return emptyRegisAdminRes, errors.New("email already exists")
+		return emptyRegisAdminRes, fmt.Errorf("admin email : %w", common.ErrExists)
 	}
 
 	dbUser.Username = req.Username

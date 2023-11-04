@@ -8,6 +8,7 @@ import (
 )
 
 type ProductService interface {
+	// ADMIN
 	AddProduct(req model.ProductReq) (model.ProductRes, error)
 	FindProductById(productId int) (model.ProductRes, error)
 	UpdateProduct(req model.ProductReq, productId int) (model.ProductRes, error)
@@ -16,6 +17,9 @@ type ProductService interface {
 	FindAllProductImagesByProductId(productId int) (model.ProductImagesRes, error)
 	UploadProductImages(req model.ProductImagesUploadReq, productId int, productName string) (model.MessageResponse, error)
 	DeleteProductImageId(prodImgId int, roductId int) (model.MessageResponse, error)
+
+	// USER
+	FindAllProduct() ([]model.ProductRes, error)
 }
 
 type productService struct {
@@ -30,6 +34,7 @@ func NewProductService(repo repository.ProductRepository) ProductService {
 
 var (
 	emptyAddProductRes = model.ProductRes{}
+	empryProductsRes   = []model.ProductRes{}
 	emptyMessageRes    = model.MessageResponse{}
 	emptyProductImages = model.ProductImagesRes{}
 )
@@ -208,6 +213,19 @@ func (s *productService) DeleteProductImageId(prodImgId int, productId int) (mod
 	response := model.MessageResponse{
 		Message: fmt.Sprintf("product image id %d successfully deleted", prodImgId),
 	}
+
+	return response, nil
+}
+
+// / USER
+// FindAllProduct implements ProductService
+func (s *productService) FindAllProduct() ([]model.ProductRes, error) {
+	products, err := s.Repo.FindAllProduct()
+	if err != nil {
+		return empryProductsRes, fmt.Errorf("product : %w", common.ErrNotFound)
+	}
+
+	response := model.ProductsFormatRes(products)
 
 	return response, nil
 }

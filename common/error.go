@@ -10,4 +10,6 @@ var (
 	ErrUploadFile       = errors.New("failed upload data")
 	ErrDeleteData       = errors.New("failed delete data")
 	ErrMustHavePrimary  = errors.New("must have primary")
+	ErrNotMatch         = errors.New("do not match")
+	ErrExists           = errors.New("already exists")
 )

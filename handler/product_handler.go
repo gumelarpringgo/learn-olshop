@@ -20,6 +20,7 @@ import (
 )
 
 type ProductHandler interface {
+	// ADMIN
 	AddProduct(w http.ResponseWriter, r *http.Request)
 	FindProductById(w http.ResponseWriter, r *http.Request)
 	UpdateProduct(w http.ResponseWriter, r *http.Request)
@@ -28,6 +29,9 @@ type ProductHandler interface {
 	GetAllProductImagesByProductId(w http.ResponseWriter, r *http.Request)
 	UploadProductImage(w http.ResponseWriter, r *http.Request)
 	DeleteProductImage(w http.ResponseWriter, r *http.Request)
+
+	// USER
+	FindAllProduct(w http.ResponseWriter, r *http.Request)
 }
 
 type productHandler struct {
@@ -257,6 +261,18 @@ func (h *productHandler) DeleteProductImage(w http.ResponseWriter, r *http.Reque
 	}
 
 	response, err := h.Service.DeleteProductImageId(productImageIdInt, productIdInt)
+	if err != nil {
+		WriteErrorResponse(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	WriteDataResponse(w, http.StatusOK, response)
+}
+
+// USER
+// FindAllProduct implements ProductHandler
+func (h *productHandler) FindAllProduct(w http.ResponseWriter, r *http.Request) {
+	response, err := h.Service.FindAllProduct()
 	if err != nil {
 		WriteErrorResponse(w, http.StatusInternalServerError, err)
 		return

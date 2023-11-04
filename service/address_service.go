@@ -1,7 +1,8 @@
 package service
 
 import (
-	"errors"
+	"fmt"
+	"learn/common"
 	"learn/model"
 	"learn/repository"
 )
@@ -29,12 +30,6 @@ var (
 	emptyAddressWithoutData = model.AddressResWithoutData{}
 )
 
-var (
-	errAddMustHavePrimary = errors.New("address must have primary")
-	errAddressNotFound    = errors.New("address not found")
-	errAddressNotOwner    = errors.New("address not owner")
-)
-
 // CreateAddress implements AddressService
 func (s *serviceAddress) AddAddress(req model.AddressReq, userId int) (model.AddressRes, error) {
 	address := model.Address{}
@@ -42,17 +37,17 @@ func (s *serviceAddress) AddAddress(req model.AddressReq, userId int) (model.Add
 
 	arrayAddress, err := s.Repo.FindByUserId(userId)
 	if err != nil {
-		return emptyAddressRes, err
+		return emptyAddressRes, fmt.Errorf("FindByUserId call failed: %w", err)
 	}
 
 	if len(arrayAddress) == 0 && req.IsPrimary != true {
-		return emptyAddressRes, errAddMustHavePrimary
+		return emptyAddressRes, fmt.Errorf("address: %w", err)
 	} else if len(arrayAddress) >= 1 && req.IsPrimary {
 		isPrimary = "yes"
 
 		_, err := s.Repo.MarkAllAddressNonPrimary(userId)
 		if err != nil {
-			return emptyAddressRes, err
+			return emptyAddressRes, fmt.Errorf("MarkAllAddressNonPrimary call failed: %w", err)
 		}
 	} else if req.IsPrimary {
 		isPrimary = "yes"
@@ -64,7 +59,7 @@ func (s *serviceAddress) AddAddress(req model.AddressReq, userId int) (model.Add
 
 	addressDB, err := s.Repo.Create(address)
 	if err != nil {
-		return emptyAddressRes, err
+		return emptyAddressRes, fmt.Errorf("create call failed: %w", err)
 	}
 
 	var resIsPrimary bool
@@ -89,7 +84,7 @@ func (s *serviceAddress) GetAddresses(userId int) ([]model.AddressRes, error) {
 
 	arrayAddress, err := s.Repo.FindByUserId(userId)
 	if err != nil {
-		return emptyAddressesRes, err
+		return emptyAddressesRes, fmt.Errorf("address user id %d : %w", userId, common.ErrNotFound)
 	}
 
 	for _, addr := range arrayAddress {
@@ -119,20 +114,20 @@ func (s *serviceAddress) UpdateAddress(req model.AddressReq, addressId int) (mod
 
 	address, err := s.Repo.FindByAddressId(addressId)
 	if err != nil {
-		return emptyAddressRes, err
+		return emptyAddressRes, fmt.Errorf("FindByAddressId call failed: %w", err)
 	}
 
 	if address.Id == 0 {
-		return emptyAddressRes, errAddressNotFound
+		return emptyAddressRes, fmt.Errorf("address %d : %w", address.Id, common.ErrNotFound)
 	}
 
 	if req.UserId != address.UserId {
-		return emptyAddressRes, errAddressNotOwner
+		return emptyAddressRes, fmt.Errorf("address user %d : %w", req.UserId, common.ErrNotFound)
 	}
 
 	arrayAddress, err := s.Repo.FindByUserId(req.UserId)
 	if err != nil {
-		return emptyAddressRes, err
+		return emptyAddressRes, fmt.Errorf("FindByUserId call failed: %w", err)
 	}
 
 	for _, addrs := range arrayAddress {
@@ -141,14 +136,13 @@ func (s *serviceAddress) UpdateAddress(req model.AddressReq, addressId int) (mod
 
 			_, err := s.Repo.MarkAllAddressNonPrimary(addrs.UserId)
 			if err != nil {
-				return emptyAddressRes, err
+				return emptyAddressRes, fmt.Errorf("MarkAllAddressNonPrimary call failed: %w", err)
+			} else {
+				isPrimary = "no"
 			}
-		} else {
-			isPrimary = "no"
 		}
-
 		if req.IsPrimary == false && addrs.IsPrimary == "yes" {
-			return emptyAddressRes, errAddMustHavePrimary
+			return emptyAddressRes, fmt.Errorf("address: %w", err)
 		}
 	}
 
@@ -158,7 +152,7 @@ func (s *serviceAddress) UpdateAddress(req model.AddressReq, addressId int) (mod
 
 	updateAddress, err := s.Repo.Update(address)
 	if err != nil {
-		return emptyAddressRes, err
+		return emptyAddressRes, fmt.Errorf("update call failed: %w", err)
 	}
 
 	var resIsPrimary bool
@@ -180,17 +174,18 @@ func (s *serviceAddress) UpdateAddress(req model.AddressReq, addressId int) (mod
 // DeleteAddress implements AddressService
 func (s *serviceAddress) DeleteAddress(addressId int) (model.AddressResWithoutData, error) {
 	address, err := s.Repo.FindByAddressId(addressId)
+
 	if err != nil {
-		return emptyAddressWithoutData, errAddressNotFound
+		return emptyAddressWithoutData, fmt.Errorf("FindByAddressId call failed: %w", err)
 	}
 
 	if address.IsPrimary == "yes" {
-		return emptyAddressWithoutData, errAddMustHavePrimary
+		return emptyAddressWithoutData, fmt.Errorf("address : %w", common.ErrExists)
 	}
 
 	err = s.Repo.Delete(addressId)
 	if err != nil {
-		return emptyAddressWithoutData, err
+		return emptyAddressWithoutData, fmt.Errorf("delete call failed: %w", err)
 	}
 
 	response := model.AddressResWithoutData{
